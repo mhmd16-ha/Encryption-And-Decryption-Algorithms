@@ -17,8 +17,17 @@ namespace Encryption_And_Decryption_Algorithms
         {
             InitializeComponent();
         }
-      static  bool Cipher = false;
-        static bool RSA = true;
+        public static double c;
+        public static double d;
+        public static double n;
+
+        static bool Cipher = false;
+        static bool Affine = true;
+        static bool vigenere = false;
+        private static int Mod(int a, int b)
+        {
+            return (a % b + b) % b;
+        }
 
         //Caesar Cipher 
         public static char cipher(char ch, int key)
@@ -33,8 +42,8 @@ namespace Encryption_And_Decryption_Algorithms
             return (char)((((ch + key) - d) % 26) + d);
 
         }
-        //Choose e
-        public static double get_e(double a, double h)
+        //gsd in RSA
+        public static double gcd(double a, double h)
         {
             double temp;
             while (true)
@@ -46,12 +55,96 @@ namespace Encryption_And_Decryption_Algorithms
                 h = temp;
             }
         }
-       public static double c;
-       public static double d;
-       public static double n;
-     
+        //Viginer
+        private static string ViginerCipher(string input, string key, bool encipher)
+        {
+            for (int i = 0; i < key.Length; ++i)
+                if (!char.IsLetter(key[i]))
+                    return null; // Error
 
+            string output = string.Empty;
+            int nonAlphaCharCount = 0;
 
+            for (int i = 0; i < input.Length; ++i)
+            {
+                if (char.IsLetter(input[i]))
+                {
+                    bool cIsUpper = char.IsUpper(input[i]);
+                    char offset = cIsUpper ? 'A' : 'a';
+                    int keyIndex = (i - nonAlphaCharCount) % key.Length;
+                    int k = (cIsUpper ? char.ToUpper(key[keyIndex]) : char.ToLower(key[keyIndex])) - offset;
+                    k = encipher ? k : -k;
+                    char ch = (char)((Mod(((input[i] + k) - offset), 26)) + offset);
+                    output += ch;
+                }
+                else
+                {
+                    output += input[i];
+                    ++nonAlphaCharCount;
+                }
+            }
+
+            return output;
+        }
+
+        public static string ViginerEncrypt(string input, string key)
+        {
+            return ViginerCipher(input, key, true);
+        }
+
+        public static string ViginerDecrypt(string input, string key)
+        {
+            return ViginerCipher(input, key, false);
+        }
+
+        //Afine 
+        public static string AffineEncrypt(string plainText, int a, int b)
+        {
+            string cipherText = "";
+
+            // Put Plain Text (all capitals) into Character Array
+            char[] chars = plainText.ToUpper().ToCharArray();
+
+            // Compute e(x) = (ax + b)(mod m) for every character in the Plain Text
+            foreach (char c in chars)
+            {
+                int x = Convert.ToInt32(c - 65);
+                cipherText += Convert.ToChar(((a * x + b) % 26) + 65);
+            }
+
+            return cipherText;
+        }
+        public static string AffineDecrypt(string cipherText, int a, int b)
+        {
+            string plainText = "";
+
+            // Get Multiplicative Inverse of a
+            int aInverse = MultiplicativeInverse(a);
+
+            // Put Cipher Text (all capitals) into Character Array
+            char[] chars = cipherText.ToUpper().ToCharArray();
+
+            // Computer d(x) = aInverse * (e(x)  b)(mod m)
+            foreach (char c in chars)
+            {
+                int x = Convert.ToInt32(c - 65);
+                if (x - b < 0) x = Convert.ToInt32(x) + 26;
+                plainText += Convert.ToChar(((aInverse * (x - b)) % 26) + 65);
+            }
+
+            return plainText;
+        }
+        public static int MultiplicativeInverse(int a)
+        {
+            for (int x = 1; x < 27; x++)
+            {
+                if ((a * x) % 26 == 1)
+                    return x;
+            }
+
+            throw new Exception("No multiplicative inverse found!");
+        }
+       
 
 
         private void Encryptr_Click(object sender, EventArgs e)
@@ -72,33 +165,33 @@ namespace Encryption_And_Decryption_Algorithms
 
                     textBox1.Text = output;
                 }
-            }else if (RSA == true)
+            }else if (Affine == true)
             {
                 if (textBox4.Text == "" || textBox5.Text == "")
                 {
                     MessageBox.Show("please Enter the Keys");
                 }
-                else { 
-                double p =double.Parse( textBox5.Text);
-                double q = double.Parse( textBox4.Text);
-                 n = p * q;
-                double _e = 2;
-                double phi = (p - 1) * (q - 1);
-                while (_e < phi)
-                {                  
-                    if (get_e(_e, phi) == 1)
-                        break;
-                    else
-                        _e++;
+                else {
+                    string p = textBox2.Text;
+                    int m =int.Parse( textBox5.Text);
+                    int k =int.Parse(textBox4.Text);
+                    string c = AffineEncrypt(p, m, k);
+                    textBox1.Text = c;
                 }
-                int k = 2; 
-                  d = (1 + (k * phi)) / _e;
-                var msg = textBox2.Text;
-                textBox1.Text = String.Format("{0:F6}", msg);
-                c = Math.Pow(double.Parse( msg), _e);
-                c = c % n;
-                textBox1.Text= String.Format("{0:F6}", c);
             }
+            else if (vigenere == true)
+            {
+                if (textBox3.Text == "")
+                {
+                    MessageBox.Show("please enter the key");
+                }
+                else
+                {
+                    string text = textBox2.Text;
+                    string key = textBox3.Text;
+                    string cipherText = ViginerEncrypt(text, key);
+                    textBox1.Text = cipherText;
+                }
             }
 
         }
@@ -116,16 +209,38 @@ namespace Encryption_And_Decryption_Algorithms
                 var key = int.Parse(textBox3.Text);
                 string output = string.Empty;
                 foreach (char ch in text)
-                    output += cipher(ch, 26 - key);
-
+                output += cipher(ch, 26 - key);
                 textBox2.Text = output;
             }
-            }else if (RSA == true)
+            }else if (Affine == true)
             {
+                if (textBox4.Text == "" || textBox5.Text == "")
+                {
+                    MessageBox.Show("please Enter the Keys");
+                }
+                else
+                {
+                    string c = textBox1.Text;
+                    int m = int.Parse(textBox5.Text);
+                    int k = int.Parse(textBox4.Text);
+                    string p = AffineDecrypt(c, m, k);
+                    textBox2.Text = p;
 
-                double m = Math.Pow(c, d);
-                m = m % n;
-                textBox2.Text= String.Format("{0:F6}", m);
+                }
+            }
+            else if (vigenere == true)
+            {
+                if (textBox3.Text == "")
+                {
+                    MessageBox.Show("please enter the key");
+                }
+                else { 
+                string text = textBox1.Text;
+                string key = textBox3.Text;
+                string plainText = ViginerDecrypt(text, key);
+                textBox2.Text = plainText;
+                }
+
             }
         }
 
@@ -147,15 +262,25 @@ namespace Encryption_And_Decryption_Algorithms
            int currentMyComboBoxIndex = comboBox1.FindStringExact(comboBox1.Text);
             if (currentMyComboBoxIndex == 0)
             {
-                RSA = true;
+                Affine = true;
                 Cipher = false;
+                vigenere = false;
 
             }
             else if(currentMyComboBoxIndex == 1)
             {
-                RSA = false;
+                Affine = false;
                 Cipher = true;
+                vigenere = false;
+            }
+            else if (currentMyComboBoxIndex == 2)
+            {
+                Affine = false;
+                Cipher = false;
+                vigenere = true;
             }
         }
+
+     
     }
 }
