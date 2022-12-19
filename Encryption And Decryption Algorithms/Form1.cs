@@ -30,19 +30,19 @@ namespace Encryption_And_Decryption_Algorithms
         }
 
         //Caesar Cipher 
-        public static char cipher(char ch, int key)
+        private static string CaesarCipher(string input, int key)
         {
-            if (!char.IsLetter(ch))
-            {
-
-                return ch;
+            string output= string.Empty;
+            for (int i = 0; i < input.Length;i++)
+            {            
+                char offset = char.IsUpper(input[i])?'A' : 'a';
+                char ch= (char)((((input[i]+key)- offset) % 26) + offset);
+              output += ch;
+                
             }
-
-            char d = char.IsUpper(ch) ? 'A' : 'a';
-            return (char)((((ch + key) - d) % 26) + d);
-
+          return output;
         }
-        //gsd in RSA
+        //gsd 
         public static double gcd(double a, double h)
         {
             double temp;
@@ -58,14 +58,14 @@ namespace Encryption_And_Decryption_Algorithms
         //Viginer
         private static string ViginerCipher(string input, string key, bool encipher)
         {
-            for (int i = 0; i < key.Length; ++i)
+            for (int i = 0; i < key.Length; i++)
                 if (!char.IsLetter(key[i]))
-                    return null; // Error
+                    return null; 
 
             string output = string.Empty;
             int nonAlphaCharCount = 0;
 
-            for (int i = 0; i < input.Length; ++i)
+            for (int i = 0; i < input.Length; i++)
             {
                 if (char.IsLetter(input[i]))
                 {
@@ -74,7 +74,8 @@ namespace Encryption_And_Decryption_Algorithms
                     int keyIndex = (i - nonAlphaCharCount) % key.Length;
                     int k = (cIsUpper ? char.ToUpper(key[keyIndex]) : char.ToLower(key[keyIndex])) - offset;
                     k = encipher ? k : -k;
-                    char ch = (char)((Mod(((input[i] + k) - offset), 26)) + offset);
+                    int r = input[i] - offset;
+                    char ch = (char)((Mod(((r + k)), 26)) + offset);
                     output += ch;
                 }
                 else
@@ -98,41 +99,46 @@ namespace Encryption_And_Decryption_Algorithms
         }
 
         //Afine 
-        public static string AffineEncrypt(string plainText, int a, int b)
+        public static string AffineEncrypt(string input, int M, int K)
         {
-            string cipherText = "";
-
-            // Put Plain Text (all capitals) into Character Array
-            char[] chars = plainText.ToUpper().ToCharArray();
-
-            // Compute e(x) = (ax + b)(mod m) for every character in the Plain Text
-            foreach (char c in chars)
+            string output = string.Empty;           
+            
+            for (int i = 0; i < input.Length; i++)
             {
-                int x = Convert.ToInt32(c - 65);
-                cipherText += Convert.ToChar(((a * x + b) % 26) + 65);
+                if (char.IsLetter(input[i]))
+                {
+                    char offset = char.IsUpper(input[i]) ? 'A' : 'a';
+                    int p = input[i] - offset;
+                    char ch= Convert.ToChar(((M * p + K) % 26) + offset);
+                    output += ch;
+                }else
+                {
+                    output += input[i];
+                }
             }
 
-            return cipherText;
+            return output;
         }
-        public static string AffineDecrypt(string cipherText, int a, int b)
+        public static string AffineDecrypt(string input, int M, int K)
         {
-            string plainText = "";
-
-            // Get Multiplicative Inverse of a
-            int aInverse = MultiplicativeInverse(a);
-
-            // Put Cipher Text (all capitals) into Character Array
-            char[] chars = cipherText.ToUpper().ToCharArray();
-
-            // Computer d(x) = aInverse * (e(x)  b)(mod m)
-            foreach (char c in chars)
+            string output = string.Empty;
+            int aInverse = MultiplicativeInverse(M);
+            for (int i = 0; i < input.Length; i++)
             {
-                int x = Convert.ToInt32(c - 65);
-                if (x - b < 0) x = Convert.ToInt32(x) + 26;
-                plainText += Convert.ToChar(((aInverse * (x - b)) % 26) + 65);
+                if (char.IsLetter(input[i]))
+                {
+                    char offset = char.IsUpper(input[i]) ? 'A' : 'a';
+                    int c = input[i] - offset;
+                    char ch = (char)((Mod((aInverse * (c - K)) , 26)) + offset);
+                    output += ch;
+                }
+                else
+                {
+                    output += input[i];
+                }
             }
 
-            return plainText;
+            return output;
         }
         public static int MultiplicativeInverse(int a)
         {
@@ -149,6 +155,7 @@ namespace Encryption_And_Decryption_Algorithms
 
         private void Encryptr_Click(object sender, EventArgs e)
         {
+
             if (Cipher == true)
             {
                 if (textBox3.Text == "")
@@ -157,13 +164,9 @@ namespace Encryption_And_Decryption_Algorithms
                 }
                 else
                 {
-                    var text = textBox2.Text;
-                    var key = int.Parse(textBox3.Text);
-                    string output = string.Empty;
-                    foreach (char ch in text)
-                        output += cipher(ch, key);
-
-                    textBox1.Text = output;
+                    string text = textBox2.Text;
+                    var key = int.Parse(textBox3.Text);                
+                    textBox1.Text = CaesarCipher(text, key);
                 }
             }else if (Affine == true)
             {
@@ -189,8 +192,18 @@ namespace Encryption_And_Decryption_Algorithms
                 {
                     string text = textBox2.Text;
                     string key = textBox3.Text;
-                    string cipherText = ViginerEncrypt(text, key);
-                    textBox1.Text = cipherText;
+                    
+                    if (!key.All(char.IsDigit))
+                    {
+                        string cipherText = ViginerEncrypt(text, key);
+                        textBox1.Text = cipherText;
+
+                    }
+                    else
+                    {
+                        MessageBox.Show("Enter the Key in Letters");
+                    }
+                  
                 }
             }
 
@@ -205,12 +218,9 @@ namespace Encryption_And_Decryption_Algorithms
             }
             else
             {
-                var text = textBox1.Text;
+                string text = textBox1.Text;
                 var key = int.Parse(textBox3.Text);
-                string output = string.Empty;
-                foreach (char ch in text)
-                output += cipher(ch, 26 - key);
-                textBox2.Text = output;
+                textBox2.Text = CaesarCipher(text, 26 - key);
             }
             }else if (Affine == true)
             {
@@ -237,8 +247,11 @@ namespace Encryption_And_Decryption_Algorithms
                 else { 
                 string text = textBox1.Text;
                 string key = textBox3.Text;
-                string plainText = ViginerDecrypt(text, key);
-                textBox2.Text = plainText;
+                    if (!key.All(char.IsDigit))
+                    {
+                        string plainText = ViginerDecrypt(text, key);
+                        textBox2.Text = plainText;
+                    }
                 }
 
             }
