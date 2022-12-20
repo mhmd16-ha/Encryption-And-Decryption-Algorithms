@@ -34,10 +34,18 @@ namespace Encryption_And_Decryption_Algorithms
         {
             string output= string.Empty;
             for (int i = 0; i < input.Length;i++)
-            {            
-                char offset = char.IsUpper(input[i])?'A' : 'a';
-                char ch= (char)((((input[i]+key)- offset) % 26) + offset);
-              output += ch;
+            {
+                if (char.IsLetter(input[i]))
+                {
+                    char offset = char.IsUpper(input[i]) ? 'A' : 'a';
+                    int c = input[i] - offset;
+                    char ch =(char)( Mod((c + key), 26) + offset);
+                    output += ch;
+                }
+                else
+                {
+                    output += input[i];
+                }
                 
             }
           return output;
@@ -55,24 +63,37 @@ namespace Encryption_And_Decryption_Algorithms
                 h = temp;
             }
         }
+        //generate Key
+        static String generateKey(String str, String key)//se2
+        {
+            int x = str.Length;//secret 
+
+            for (int i = 0; ; i++)
+            {
+                if (x == i)
+                    i = 0;
+                if (key.Length == str.Length)
+                    break;
+                key += (key[i]);//sesese 
+            }
+            return key;
+        }
         //Viginer
         private static string ViginerCipher(string input, string key, bool encipher)
         {
-            for (int i = 0; i < key.Length; i++)
-                if (!char.IsLetter(key[i]))
-                    return null; 
+           
 
             string output = string.Empty;
             int nonAlphaCharCount = 0;
-
+            
             for (int i = 0; i < input.Length; i++)
             {
                 if (char.IsLetter(input[i]))
                 {
                     bool cIsUpper = char.IsUpper(input[i]);
                     char offset = cIsUpper ? 'A' : 'a';
-                    int keyIndex = (i - nonAlphaCharCount) % key.Length;
-                    int k = (cIsUpper ? char.ToUpper(key[keyIndex]) : char.ToLower(key[keyIndex])) - offset;
+                    int keyIndex = (i - nonAlphaCharCount) ;
+                    int k = (key[keyIndex]) - offset;
                     k = encipher ? k : -k;
                     int r = input[i] - offset;
                     char ch = (char)((Mod(((r + k)), 26)) + offset);
@@ -109,7 +130,7 @@ namespace Encryption_And_Decryption_Algorithms
                 {
                     char offset = char.IsUpper(input[i]) ? 'A' : 'a';
                     int p = input[i] - offset;
-                    char ch= Convert.ToChar(((M * p + K) % 26) + offset);
+                    char ch= (char)(((M * p + K) % 26) + offset);
                     output += ch;
                 }else
                 {
@@ -140,11 +161,11 @@ namespace Encryption_And_Decryption_Algorithms
 
             return output;
         }
-        public static int MultiplicativeInverse(int a)
+        public static int MultiplicativeInverse(int m)
         {
             for (int x = 1; x < 27; x++)
             {
-                if ((a * x) % 26 == 1)
+                if ((m * x) % 26 == 1)
                     return x;
             }
 
@@ -192,7 +213,8 @@ namespace Encryption_And_Decryption_Algorithms
                 {
                     string text = textBox2.Text;
                     string key = textBox3.Text;
-                    
+                    key = generateKey(text,key);
+
                     if (!key.All(char.IsDigit))
                     {
                         string cipherText = ViginerEncrypt(text, key);
@@ -247,6 +269,7 @@ namespace Encryption_And_Decryption_Algorithms
                 else { 
                 string text = textBox1.Text;
                 string key = textBox3.Text;
+                key = generateKey(text, key);
                     if (!key.All(char.IsDigit))
                     {
                         string plainText = ViginerDecrypt(text, key);
